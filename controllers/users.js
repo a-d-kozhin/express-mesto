@@ -14,7 +14,7 @@ function getUserById(req, res) {
       if (!foundUser) {
         res
           .status(404)
-          .send(`Error, status 404. No user with id ${req.params.id} is found`);
+          .send({ 'message': 'Нет пользователя с таким id' });
         return;
       }
       res
