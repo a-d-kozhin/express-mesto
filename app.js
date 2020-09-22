@@ -18,5 +18,5 @@ app.listen(PORT);
 app.get('*', (req, res) => {
   res
     .status(404)
-    .send({ 'message': 'Запрашиваемый ресурс не найден' });
+    .send({ message: 'Запрашиваемый ресурс не найден' });
 });

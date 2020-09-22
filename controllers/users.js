@@ -7,14 +7,14 @@ function getUserById(req, res) {
       if (!users) {
         res
           .status(500)
-          .send('Error, status 500');
+          .send({ message: 'Ошибка, статус 500' });
         return;
       }
       const foundUser = users.find((user) => user._id === req.params.id);
       if (!foundUser) {
         res
           .status(404)
-          .send({ 'message': 'Нет пользователя с таким id' });
+          .send({ message: 'Нет пользователя с таким id' });
         return;
       }
       res
@@ -29,7 +29,7 @@ function getAllUsers(req, res) {
       if (!users) {
         res
           .status(500)
-          .send('Error, status 500');
+          .send({ message: 'Ошибка, статус 500' });
         return;
       }
       res

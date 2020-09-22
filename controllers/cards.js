@@ -7,7 +7,7 @@ function getAllCards(req, res) {
       if (!data) {
         res
           .status(500)
-          .send('Error, status 500');
+          .send({ message: 'Ошибка чтения файла' });
         return;
       }
       res
