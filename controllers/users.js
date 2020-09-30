@@ -1,17 +1,9 @@
-const path = require('path');
-const { getJson } = require('../helpers/read-file');
+const User = require('../models/user');
 
 function getUserById(req, res) {
-  return getJson(path.join(__dirname, '..', 'data', 'users.json'))
-    .then((users) => {
-      if (!users) {
-        res
-          .status(500)
-          .send({ message: 'Ошибка, статус 500' });
-        return;
-      }
-      const foundUser = users.find((user) => user._id === req.params.id);
-      if (!foundUser) {
+  return User.findOne({ _id: req.params.id })
+    .then((user) => {
+      if (!user) {
         res
           .status(404)
           .send({ message: 'Нет пользователя с таким id' });
@@ -19,26 +11,42 @@ function getUserById(req, res) {
       }
       res
         .status(200)
-        .send(foundUser);
-    });
+        .send(user);
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
 }
 
 function getAllUsers(req, res) {
-  return getJson(path.join(__dirname, '..', 'data', 'users.json'))
+  return User.find({})
     .then((users) => {
-      if (!users) {
-        res
-          .status(500)
-          .send({ message: 'Ошибка, статус 500' });
-        return;
-      }
       res
         .status(200)
         .send(users);
-    });
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
+}
+
+function addUser(req, res) {
+  if (!req.body.avatar) {
+    res.status(400).send('Bad request. Avatar link is required');
+  }
+  if (!req.body.about) {
+    res.status(400).send('Bad request. About field is required');
+  }
+  if (!req.body.name) {
+    res.status(400).send('Bad request. Name is required');
+  }
+  return User.create(req.body)
+    .then((user) => {
+      res
+        .status(200)
+        .send(user);
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
 }
 
 module.exports = {
   getAllUsers,
   getUserById,
+  addUser,
 };
