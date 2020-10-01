@@ -39,8 +39,38 @@ function removeCard(req, res) {
     .catch((err) => res.status(500).send({ message: err.message }));
 }
 
+function likeCard(req, res) {
+  return Card.findOneAndUpdate(
+    { _id: req.params.cardId },
+    { $addToSet: { likes: req.user._id } },
+    { new: true },
+  )
+    .then((user) => {
+      res
+        .status(200)
+        .send(user);
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
+}
+
+function dislikeCard(req, res) {
+  return Card.findOneAndUpdate(
+    { _id: req.params.cardId },
+    { $pull: { likes: req.user._id } },
+    { new: true },
+  )
+    .then((user) => {
+      res
+        .status(200)
+        .send(user);
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
+}
+
 module.exports = {
   getAllCards,
   createCard,
   removeCard,
+  likeCard,
+  dislikeCard,
 };
