@@ -22,10 +22,3 @@ const userSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('user', userSchema);
-
-
-// {
-//   "name": "Squirrel",
-//   "about": "Eats seeds",
-//   "avatar": "https://cdn.mos.cms.futurecdn.net/m33Pou2DHPmjSvVGVX6sRH-1200-80.jpg"
-// }

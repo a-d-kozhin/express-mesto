@@ -45,8 +45,50 @@ function addUser(req, res) {
     .catch((err) => res.status(500).send({ message: err.message }));
 }
 
+function updateUserProfile(req, res) {
+  if (!req.body.about) {
+    res.status(400).send('Bad request. About field is required');
+  }
+  if (!req.body.name) {
+    res.status(400).send('Bad request. Name is required');
+  }
+  return User.findOneAndUpdate(
+    { _id: req.user._id },
+    { name: req.body.name, about: req.body.about },
+    {
+      new: true,
+      runValidators: true,
+      upsert: true,
+    },
+  )
+    .then((user) => {
+      res
+        .status(200)
+        .send(user);
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
+}
+
+function updateUserAvatar(req, res) {
+  if (!req.body.avatar) {
+    res.status(400).send('Bad request. Avatar link is required');
+  }
+  return User.findOneAndUpdate(
+    { _id: req.user._id },
+    { avatar: req.body.avatar },
+  )
+    .then((user) => {
+      res
+        .status(200)
+        .send(user);
+    })
+    .catch((err) => res.status(500).send({ message: err.message }));
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
   addUser,
+  updateUserProfile,
+  updateUserAvatar,
 };
