@@ -10,12 +10,16 @@ const cardSchema = new mongoose.Schema({
   },
   link: {
     type: String,
-    /* нужен regex для проверки ссылки */
+    validate: {
+      validator(v) {
+        return /\b((http|https):\/\/?)[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|\/?))/g.test(v);
+      },
+      message: 'URL is not valid',
+    },
     required: [true, 'Card URL is required'],
   },
   owner: {
     type: ObjectID,
-    /* нужен regex для проверки ссылки */
     required: [true, 'OwnerId is required'],
   },
   likes: {

@@ -1,4 +1,3 @@
-// const { ObjectID } = require('mongodb');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -16,8 +15,13 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    /* нужен regex для проверки ссылки */
     required: [true, 'Avatar URL is required'],
+    validate: {
+      validator(v) {
+        return /\b((http|https):\/\/?)[^\s()<>]+(?:\([\w\d]+\)|([^[:punct:]\s]|\/?))/g.test(v);
+      },
+      message: 'URL is not valid',
+    },
   },
 });
 
