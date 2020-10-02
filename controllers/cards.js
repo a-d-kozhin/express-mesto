@@ -1,19 +1,20 @@
 const Card = require('../models/card');
 
 function createCard(req, res) {
+  const { name, link } = req.body;
   if (!req.user._id) {
     res.status(400).send('Bad request. Owner id is required');
   }
-  if (!req.body.link) {
+  if (!link) {
     res.status(400).send('Bad request. Link is required');
   }
-  if (!req.body.name) {
+  if (!name) {
     res.status(400).send('Bad request. Name is required');
   }
-  return Card.create({ owner: req.user._id, link: req.body.link, name: req.body.name })
+  return Card.create({ owner: req.user._id, link, name })
     .then((card) => {
       res
-        .status(200)
+        .status(201)
         .send(card);
     })
     .catch((err) => res.status(500).send({ message: err.message }));

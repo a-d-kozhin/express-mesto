@@ -27,34 +27,36 @@ function getAllUsers(req, res) {
 }
 
 function addUser(req, res) {
-  if (!req.body.avatar) {
+  const { avatar, about, name } = req.body;
+  if (!avatar) {
     res.status(400).send('Bad request. Avatar link is required');
   }
-  if (!req.body.about) {
+  if (!about) {
     res.status(400).send('Bad request. About field is required');
   }
-  if (!req.body.name) {
+  if (!name) {
     res.status(400).send('Bad request. Name is required');
   }
   return User.create(req.body)
     .then((user) => {
       res
-        .status(200)
+        .status(201)
         .send(user);
     })
     .catch((err) => res.status(500).send({ message: err.message }));
 }
 
 function updateUserProfile(req, res) {
-  if (!req.body.about) {
+  const { about, name } = req.body;
+  if (!about) {
     res.status(400).send('Bad request. About field is required');
   }
-  if (!req.body.name) {
+  if (!name) {
     res.status(400).send('Bad request. Name is required');
   }
   return User.findOneAndUpdate(
     { _id: req.user._id },
-    { name: req.body.name, about: req.body.about },
+    { name, about },
     {
       new: true,
       runValidators: true,
@@ -70,12 +72,18 @@ function updateUserProfile(req, res) {
 }
 
 function updateUserAvatar(req, res) {
-  if (!req.body.avatar) {
+  const { avatar } = req.body;
+  if (!avatar) {
     res.status(400).send('Bad request. Avatar link is required');
   }
   return User.findOneAndUpdate(
     { _id: req.user._id },
-    { avatar: req.body.avatar },
+    { avatar },
+    {
+      new: true,
+      runValidators: true,
+      upsert: true,
+    },
   )
     .then((user) => {
       res
