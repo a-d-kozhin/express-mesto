@@ -1,4 +1,8 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+
+const SALT = 10;
 
 function getUserById(req, res) {
   return User.findOne({ _id: req.params.id })
@@ -26,8 +30,10 @@ function getAllUsers(req, res) {
     .catch((err) => res.status(500).send({ message: err.message }));
 }
 
-function addUser(req, res) {
-  const { avatar, about, name } = req.body;
+function createUser(req, res) {
+  const {
+    avatar, about, name, email, password,
+  } = req.body;
   if (!avatar) {
     res.status(400).send('Bad request. Avatar link is required');
   }
@@ -37,13 +43,41 @@ function addUser(req, res) {
   if (!name) {
     res.status(400).send('Bad request. Name is required');
   }
-  return User.create(req.body)
+  if (!email) {
+    res.status(400).send('Bad request. Email is required');
+  }
+  if (!password) {
+    res.status(400).send('Bad request. Password is required');
+  }
+  return bcrypt.hash(password, SALT)
+    .then((hash) => User.create({
+      avatar, about, name, email, password: hash,
+    }))
+    .then((user) => res.send(user))
+    .catch((err) => res.send({ message: err.message }));
+}
+
+function login(req, res) {
+  const { email, password } = req.body;
+
+  User.findOne({ email }).select('+password')
     .then((user) => {
-      res
-        .status(201)
-        .send(user);
+      if (!user) {
+        return Promise.reject(new Error('Неправильные почта или пароль'));
+      }
+      const isMatched = bcrypt.compare(password, user.password);
+      if (!isMatched) {
+        return Promise.reject(new Error('Неправильные почта или пароль'));
+      }
+      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+      return res.send({ token });
     })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .catch((err) => {
+      res
+        .status(401)
+        .send({ message: err.message });
+    });
 }
 
 function updateUserProfile(req, res) {
@@ -96,7 +130,8 @@ function updateUserAvatar(req, res) {
 module.exports = {
   getAllUsers,
   getUserById,
-  addUser,
+  createUser,
   updateUserProfile,
   updateUserAvatar,
+  login,
 };
