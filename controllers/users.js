@@ -1,93 +1,70 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const ConflictError = require('../errors/ConflictError.js');
+const NotFoundError = require('../errors/NotFoundError');
+const UnauthorizedError = require('../errors/UnauthorizedError.js');
 
 const SALT = 10;
 
-function getUserById(req, res) {
+function getUserById(req, res, next) {
   return User.findOne({ _id: req.params.id })
     .then((user) => {
-      if (!user) {
-        res
-          .status(404)
-          .send({ message: 'Нет пользователя с таким id' });
-        return;
-      }
-      res
-        .status(200)
-        .send(user);
+      if (!user) return next(new NotFoundError('Нет пользователя с таким id'));
+      return res.status(200).send(user);
     })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .catch(next);
 }
 
-function getAllUsers(req, res) {
+function getAllUsers(req, res, next) {
   return User.find({})
-    .then((users) => {
-      res
-        .status(200)
-        .send(users);
-    })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .then((users) => res.status(200).send(users))
+    .catch(next);
 }
 
-function createUser(req, res) {
+function createUser(req, res, next) {
   const {
-    avatar, about, name, email, password,
+    email, password,
   } = req.body;
-  if (!avatar) {
-    res.status(400).send('Bad request. Avatar link is required');
-  }
-  if (!about) {
-    res.status(400).send('Bad request. About field is required');
-  }
-  if (!name) {
-    res.status(400).send('Bad request. Name is required');
-  }
-  if (!email) {
-    res.status(400).send('Bad request. Email is required');
-  }
-  if (!password) {
-    res.status(400).send('Bad request. Password is required');
-  }
-  return bcrypt.hash(password, SALT)
-    .then((hash) => User.create({
-      avatar, about, name, email, password: hash,
-    }))
-    .then((user) => res.send(user))
-    .catch((err) => res.send({ message: err.message }));
+
+  return bcrypt.hash(password, SALT, (error, hash) => {
+    User.findOne({ email })
+      .then((user) => {
+        if (user) return next(new ConflictError('Пользователь с таким email уже есть'));
+        return User.create({
+          name: 'Имя',
+          about: 'О себе',
+          avatar: 'https://www.jbrhomes.com/wp-content/uploads/blank-avatar.png',
+          email,
+          password: hash,
+        })
+          .then(() => res.status(201).send({ message: `Пользователь ${email} успешно создан!` }))
+          .catch((err) => res.status(400).send(err));
+      })
+      .catch(next);
+  });
 }
 
-function login(req, res) {
+function login(req, res, next) {
   const { email, password } = req.body;
 
   User.findOne({ email }).select('+password')
     .then((user) => {
-      if (!user) {
-        return Promise.reject(new Error('Неправильные почта или пароль'));
-      }
-      const isMatched = bcrypt.compare(password, user.password);
-      if (!isMatched) {
-        return Promise.reject(new Error('Неправильные почта или пароль'));
-      }
-      const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-      return res.send({ token });
+      if (!user) return next(new UnauthorizedError('Неправильные почта или пароль'));
+      return bcrypt.compare(password, user.password, (error, isMatched) => {
+        if (!isMatched) {
+          return next(new UnauthorizedError('Неправильные почта или пароль'));
+        }
+        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        return res.send({ token });
+      });
     })
-    .catch((err) => {
-      res
-        .status(401)
-        .send({ message: err.message });
-    });
+    .catch(next);
 }
 
-function updateUserProfile(req, res) {
+function updateUserProfile(req, res, next) {
   const { about, name } = req.body;
-  if (!about) {
-    res.status(400).send('Bad request. About field is required');
-  }
-  if (!name) {
-    res.status(400).send('Bad request. Name is required');
-  }
+
   return User.findOneAndUpdate(
     { _id: req.user._id },
     { name, about },
@@ -97,19 +74,13 @@ function updateUserProfile(req, res) {
       upsert: true,
     },
   )
-    .then((user) => {
-      res
-        .status(200)
-        .send(user);
-    })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .then((user) => res.status(200).send(user))
+    .catch(next);
 }
 
-function updateUserAvatar(req, res) {
+function updateUserAvatar(req, res, next) {
   const { avatar } = req.body;
-  if (!avatar) {
-    res.status(400).send('Bad request. Avatar link is required');
-  }
+
   return User.findOneAndUpdate(
     { _id: req.user._id },
     { avatar },
@@ -119,12 +90,8 @@ function updateUserAvatar(req, res) {
       upsert: true,
     },
   )
-    .then((user) => {
-      res
-        .status(200)
-        .send(user);
-    })
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .then((user) => res.status(200).send(user))
+    .catch(next);
 }
 
 module.exports = {
